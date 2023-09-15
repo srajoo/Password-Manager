@@ -223,7 +223,7 @@ class CreateVault(generics.CreateAPIView):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        #serializer.save(organization=organization)
+
         vault = serializer.save(organization=organization)
 
         VaultAccess.objects.create(vault=vault, user=request.user, can_view=True, can_edit=True)
@@ -253,6 +253,7 @@ class ListAllVaults(generics.ListAPIView):
 @permission_classes([permissions.IsAuthenticated, PasswordAccessPermission])
 class ViewVaultMembers(generics.ListAPIView):
     serializer_class = VaultAccessSerializer
+    throttle_classes = [UserThrottle]
 
     def get_queryset(self):
         vault_id = self.kwargs.get('vault_id')
