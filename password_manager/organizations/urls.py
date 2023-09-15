@@ -17,7 +17,7 @@ urlpatterns = [
 
     #Vaults
     path('<int:organization_id>/vaults/<str:name>/', views.CreateVault.as_view(), name='create-vault'),
-    path('vaults/', views.ListAllVaults.as_view(), name='list-vaults'),
+    path('<int:organization_id>/vaults/view-vaults', views.ListAllVaults.as_view(), name='list-vaults'),
     path('<int:organization_id>/vaults/<int:vault_id>/<str:name>', views.VaultAccessView.as_view(), name='give-vault-access'),
     path('<int:organization_id>/vaults/<int:vault_id>/members/<str:name>', views.ViewVaultMembers.as_view(), name='view-vault-access-members'),
     path('vaults/<int:vault_id>/members/<int:user_id>/<str:name>/', views.UpdateVaultAccess.as_view(), name='update-vault-access'),

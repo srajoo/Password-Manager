@@ -110,7 +110,7 @@ class AddOrganizationMembers(generics.CreateAPIView):
     throttle_classes = [UserThrottle]
     
     def create(self, request, *args, **kwargs):
-        existing_user = User.objects.filter(email=request.data['user']['email']).first()
+        existing_user = User.objects.filter(email=request.data['user.email']).first()
         organization_data = request.data.copy()
         
         if existing_user:
@@ -124,7 +124,9 @@ class AddOrganizationMembers(generics.CreateAPIView):
                 return Response({'detail': 'Could not create user'}, status=status.HTTP_403_FORBIDDEN)
         
 
-        del organization_data['user']
+        del organization_data['user.email']
+        organization_data['user'] = user
+      
         organization_serializer = OrganizationMembershipSerializer(data=organization_data)
     
         if organization_serializer.is_valid():
@@ -133,7 +135,7 @@ class AddOrganizationMembers(generics.CreateAPIView):
             organization_membership.save()
         else:
             return Response({'detail': 'Failed to add member'}, status=status.HTTP_400_BAD_REQUEST)
-        
+    
         return Response({'detail': 'Member has been added'}, status=status.HTTP_200_OK)
 
 @permission_classes([permissions.IsAuthenticated])
@@ -203,7 +205,6 @@ class VaultAccessView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         user = request.user
         vault_id = kwargs.get('vault_id')
-        print(vault_id)
         return super().create(request, *args, **kwargs)
 
 
@@ -222,7 +223,11 @@ class CreateVault(generics.CreateAPIView):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save(organization=organization)
+        #serializer.save(organization=organization)
+        vault = serializer.save(organization=organization)
+
+        VaultAccess.objects.create(vault=vault, user=request.user, can_view=True, can_edit=True)
+        VaultAccess.objects.create(vault=vault, user=organization.creator, can_view=True, can_edit=True)
         
         return Response(serializer.data, status=status.HTTP_201_CREATED)
         
@@ -231,44 +236,33 @@ class CreateVault(generics.CreateAPIView):
 class ListAllVaults(generics.ListAPIView):
     serializer_class = VaultSerializer
     throttle_classes = [UserThrottle]
-    
-    def get_queryset(self):
-        user = self.request.user
-        
-        user_owned_vaults = Vault.objects.filter(owner=user)
-        user_vault_access = VaultAccess.objects.filter(user=user, can_view=True)
-        user_organization_vaults = Vault.objects.filter(
-            organization__creator=user
-        )
-
-        queryset = (
-            Vault.objects.filter(pk__in=user_owned_vaults.values_list('pk', flat=True)) |
-            Vault.objects.filter(pk__in=user_vault_access.values_list('vault__pk', flat=True)) |
-            Vault.objects.filter(pk__in=user_organization_vaults.values_list('pk', flat=True))
-        ).distinct()
-
-        return queryset
-
-@permission_classes([permissions.IsAuthenticated])
-class ViewVaultMembers(generics.ListAPIView):
-    serializer_class = UserSerializer
-    throttle_classes = [UserThrottle]
 
     def get_queryset(self):
-        user = self.request.user
-        
         organization_id = self.kwargs.get('organization_id')
+        return Vault.objects.filter(organization__id=organization_id)
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        if not queryset.exists():
+            return Response({'message': 'No vaults exist for this organization.'}, status=status.HTTP_200_OK)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+@permission_classes([permissions.IsAuthenticated, PasswordAccessPermission])
+class ViewVaultMembers(generics.ListAPIView):
+    serializer_class = VaultAccessSerializer
+
+    def get_queryset(self):
         vault_id = self.kwargs.get('vault_id')
-        organization_creator = Organization.objects.get(pk=organization_id).creator.id
+        return VaultAccess.objects.filter(vault_id=vault_id)
 
-        vault_owner = Vault.objects.get(pk=vault_id).owner.id
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-        access_list = VaultAccess.objects.filter(vault_id=vault_id, can_edit=True) | VaultAccess.objects.filter(vault_id=vault_id, can_view=True)
-        access_user_ids = access_list.values_list('user_id', flat=True).distinct()
-
-        user_ids = [organization_creator, vault_owner] + list(access_user_ids)
-
-        return User.objects.filter(id__in=user_ids)
 
 @permission_classes([permissions.IsAuthenticated, VaultAccessPermission])
 class UpdateVaultAccess(generics.UpdateAPIView):
