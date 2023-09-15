@@ -30,6 +30,8 @@ python manange.py runserver
 - A secret key is needed to login.
 - Rate limiting has been implemented on APIs to protect against brute-force attack. The number of attempts have been limited to 10/minute.
 - User accounts are locked out for 30 minutes after 3 failed attempts at logging in. 
+- Passwords are salted then hashed before storing in the database.
+- Password policies such as minimum length and character variety has been enforced. 
 
 ## ER Diagram
 
