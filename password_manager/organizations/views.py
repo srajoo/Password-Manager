@@ -13,6 +13,8 @@ from rest_framework.pagination import PageNumberPagination
 from .models import Organization, OrganizationMembership, Vault, Password, VaultAccess, SharedPasswordLink
 from .serializers import UserSerializer, OrganizationSerializer, OrganizationDetailSerializer, OrganizationMembershipSerializer, OrganizationMembershipUpdateSerializer, VaultSerializer, PasswordSerializer, PasswordUpdateSerializer, VaultAccessSerializer, SharedPasswordLinkSerializer, SharedPasswordRetrieveSerializer
 
+from throttles import UserThrottle
+
 User = get_user_model()
 
 
@@ -24,6 +26,7 @@ User = get_user_model()
 class ListAllOrganizations(generics.ListCreateAPIView):
     serializer_class = OrganizationSerializer
     pagination_class = PageNumberPagination
+    throttle_classes = [UserThrottle]
 
     def get_queryset(self):
         user = self.request.user
@@ -46,6 +49,7 @@ class ListAllOrganizations(generics.ListCreateAPIView):
    
 @permission_classes([permissions.IsAuthenticated])
 class CreateOrganization(generics.CreateAPIView):
+    throttle_classes = [UserThrottle]
     queryset = Organization.objects.all()
     serializer_class = OrganizationSerializer
 
@@ -57,11 +61,13 @@ class CreateOrganization(generics.CreateAPIView):
 class ListDetailsOrganization(generics.RetrieveAPIView):
     queryset = Organization.objects.all()
     serializer_class = OrganizationDetailSerializer
+    throttle_classes = [UserThrottle]
 
 
 @permission_classes([permissions.IsAuthenticated, CreatorAndEditorPermission])
 class UpdateOrganization(generics.UpdateAPIView):
     serializer_class = OrganizationSerializer
+    throttle_classes = [UserThrottle]
 
     def get_queryset(self):
         user = self.request.user
@@ -77,7 +83,8 @@ class UpdateOrganization(generics.UpdateAPIView):
 @permission_classes([permissions.IsAuthenticated, CreatorAndEditorPermission])
 class DeleteOrganization(generics.DestroyAPIView):
     serializer_class = OrganizationSerializer
-
+    throttle_classes = [UserThrottle]
+    
     def get_queryset(self):
         user = self.request.user
         return Organization.objects.filter(creator=user)
@@ -100,6 +107,7 @@ class DeleteOrganization(generics.DestroyAPIView):
 class AddOrganizationMembers(generics.CreateAPIView):
     queryset = OrganizationMembership.objects.all()
     serializer_class = OrganizationMembershipSerializer
+    throttle_classes = [UserThrottle]
     
     def create(self, request, *args, **kwargs):
         existing_user = User.objects.filter(email=request.data['user']['email']).first()
@@ -132,6 +140,7 @@ class AddOrganizationMembers(generics.CreateAPIView):
 class ListOrganizationMembers(generics.ListAPIView):
     serializer_class = OrganizationMembershipSerializer
     pagination_class = PageNumberPagination
+    throttle_classes = [UserThrottle]
 
     def get_queryset(self):
         organization_id = self.kwargs.get('organization_id')
@@ -159,6 +168,7 @@ class ListOrganizationMembers(generics.ListAPIView):
 class UpdateUserOrganizationRole(generics.UpdateAPIView):
     queryset = OrganizationMembership.objects.all()
     serializer_class = OrganizationMembershipUpdateSerializer
+    throttle_classes = [UserThrottle]
 
     def get_object(self):
         organization_id = self.kwargs.get('organization_id')
@@ -170,6 +180,7 @@ class UpdateUserOrganizationRole(generics.UpdateAPIView):
 class DeleteUserFromOrganization(generics.DestroyAPIView):
     queryset = OrganizationMembership.objects.all()
     serializer_class = OrganizationMembershipSerializer
+    throttle_classes = [UserThrottle]
 
     def get_object(self):
         organization_id = self.kwargs.get('organization_id')
@@ -187,6 +198,7 @@ class DeleteUserFromOrganization(generics.DestroyAPIView):
 class VaultAccessView(generics.CreateAPIView):
     queryset = VaultAccess.objects.all()
     serializer_class = VaultAccessSerializer
+    throttle_classes = [UserThrottle]
 
     def create(self, request, *args, **kwargs):
         user = request.user
@@ -199,6 +211,7 @@ class VaultAccessView(generics.CreateAPIView):
 class CreateVault(generics.CreateAPIView):
     queryset = Vault.objects.all()
     serializer_class = VaultSerializer
+    throttle_classes = [UserThrottle]
 
     def get_organization(self):
         organization_id = self.kwargs.get('organization_id')
@@ -217,6 +230,7 @@ class CreateVault(generics.CreateAPIView):
 @permission_classes([permissions.IsAuthenticated])
 class ListAllVaults(generics.ListAPIView):
     serializer_class = VaultSerializer
+    throttle_classes = [UserThrottle]
     
     def get_queryset(self):
         user = self.request.user
@@ -238,6 +252,7 @@ class ListAllVaults(generics.ListAPIView):
 @permission_classes([permissions.IsAuthenticated])
 class ViewVaultMembers(generics.ListAPIView):
     serializer_class = UserSerializer
+    throttle_classes = [UserThrottle]
 
     def get_queryset(self):
         user = self.request.user
@@ -259,6 +274,7 @@ class ViewVaultMembers(generics.ListAPIView):
 class UpdateVaultAccess(generics.UpdateAPIView):
     queryset = VaultAccess.objects.all()
     serializer_class = VaultAccessSerializer
+    throttle_classes = [UserThrottle]
 
     def get_object(self):
         vault_id = self.kwargs.get('vault_id')
@@ -271,6 +287,7 @@ class UpdateVaultAccess(generics.UpdateAPIView):
 class UpdateVaultDetails(generics.UpdateAPIView):
     queryset = Vault.objects.all()
     serializer_class = VaultSerializer
+    throttle_classes = [UserThrottle]
     
     def get_object(self):
         return self.get_queryset().get(pk=self.kwargs['vault_id'])
@@ -278,6 +295,7 @@ class UpdateVaultDetails(generics.UpdateAPIView):
 @permission_classes([permissions.IsAuthenticated, VaultAccessPermission])
 class DeleteVault(generics.DestroyAPIView):
     queryset = Vault.objects.all()
+    throttle_classes = [UserThrottle]
 
     def get_object(self):
         obj = super().get_object()
@@ -288,12 +306,14 @@ class DeleteVault(generics.DestroyAPIView):
 
 @permission_classes([permissions.IsAuthenticated, VaultAccessPermission])
 class CreatePassword(generics.CreateAPIView):
+    throttle_classes = [UserThrottle]
     serializer_class = PasswordSerializer
     
     
 @permission_classes([permissions.IsAuthenticated, PasswordAccessPermission])
 class ListVaultPasswords(generics.ListAPIView):
     serializer_class = PasswordSerializer
+    throttle_classes = [UserThrottle]
 
     def get_queryset(self):
         vault_id = self.kwargs.get('vault_id')
@@ -302,6 +322,7 @@ class ListVaultPasswords(generics.ListAPIView):
 
 @permission_classes([permissions.IsAuthenticated, VaultAccessPermission])
 class UpdatePassword(generics.UpdateAPIView):
+    throttle_classes = [UserThrottle]
     queryset = Password.objects.all()
     serializer_class = PasswordUpdateSerializer
     
@@ -311,6 +332,7 @@ class UpdatePassword(generics.UpdateAPIView):
 
 @permission_classes([permissions.IsAuthenticated, VaultAccessPermission])
 class DeletePassword(generics.DestroyAPIView):
+    throttle_classes = [UserThrottle]
     queryset = Password.objects.all()
     lookup_url_kwarg = 'password_id'
 
@@ -323,6 +345,7 @@ class DeletePassword(generics.DestroyAPIView):
 class SharePasswordView(generics.CreateAPIView):
     queryset = SharedPasswordLink.objects.all()
     serializer_class = SharedPasswordLinkSerializer
+    throttle_classes = [UserThrottle]
 
     def create(self, request, *args, **kwargs):
         vault_id = self.kwargs.get('vault_id')
@@ -356,6 +379,7 @@ class SharePasswordView(generics.CreateAPIView):
 class SharedPasswordRetrieveView(generics.RetrieveAPIView):
     queryset = SharedPasswordLink.objects.all()
     serializer_class = SharedPasswordRetrieveSerializer
+    throttle_classes = [UserThrottle]
 
     def get_object(self):
         link = self.kwargs.get('link')

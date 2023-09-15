@@ -27,6 +27,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 	lastname = models.CharField(max_length=255, default="Last")
 	email = models.EmailField(max_length=254, unique=True)
 	secret_key = models.CharField(max_length=100)
+	failed_login_attempts = models.PositiveIntegerField(default=0)
+	locked_at = models.DateTimeField(null=True, blank=True)
 	is_staff = models.BooleanField(default=False)
 	is_superuser = models.BooleanField(default=False)
 	is_active = models.BooleanField(default=True)

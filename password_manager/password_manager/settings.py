@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     'celery',
     'users',
     'organizations',
-    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -153,3 +152,7 @@ GRAPH_MODELS ={
 'all_applications': True,
 'graph_models': True,
 }
+
+AUTHENTICATION_BACKENDS = (
+    'users.backends.CustomAuthenticationBackend',
+)

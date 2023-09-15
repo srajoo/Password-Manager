@@ -25,6 +25,12 @@ python manange.py runserver
 - Passwords can also be shared using a link accessible to all with a set expiry duration.
 - Daily scheduled task of checking user configured passwords to notify users when the password is about to expire.
 
+## Security Features
+
+- A secret key is needed to login.
+- Rate limiting has been implemented on APIs to protect against brute-force attack. The number of attempts have been limited to 10/minute.
+- User accounts are locked out for 30 minutes after 3 failed attempts at logging in. 
+
 ## ER Diagram
 
 ![erd](https://github.com/srajoo/Password-Manager/assets/103288051/0d9a8b8e-ee2c-4e2a-a3ea-b38f565f3462)
